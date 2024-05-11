@@ -6,4 +6,5 @@
 -define(SEGMENT_SIZE, 32).
 -define(CHUNK_SIZE, 262144).
 -define(HASH, sha256).
+-define(SEQUENTIAL_LOOP, 1_000).
 

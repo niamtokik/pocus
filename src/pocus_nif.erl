@@ -16,15 +16,38 @@
 %%% CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 %%%
 %%% @author Mathieu Kerjouan
-%%% @copyright 2024 (c) Mathieu Kerjouan
+%%% @copyright Mathieu Kerjouan
+%%% @doc
+%%% @end
 %%%===================================================================
--module(pocus_app).
--behaviour(application).
--export([start/2, stop/1]).
+-module(pocus_nif).
+-export([init/0]).
+-export([sha256/1, sha256_sequential/3]).
+-nifs([sha256/1, sha256_sequential/3]).
+-on_load(init/0).
 
-start(_StartType, _StartArgs) ->
-    pocus_sup:start_link().
+init() -> init("pocus_nif").
 
-stop(_State) -> ok.
+init(Path) ->
+    PrivDir = application:get_env(pocus, lib_path, priv_dir()),
+    Lib = filename:join(PrivDir, Path),
+    ok = erlang:load_nif(Lib, 0).
 
+priv_dir() ->
+    case code:priv_dir(cozo) of
+        {error, bad_name} ->
+            case code:which(?MODULE) of
+                FN when is_list(FN) ->
+                    filename:join([filename:dirname(FN), "..", "priv"]);
+                _ ->
+                    "../priv"
+            end;
+        Val ->
+            Val
+    end.
 
+sha256(Data) ->
+    exit(nif_library_not_loaded).
+
+sha256_sequential(Data, Seed, Blocksize) ->
+    exit(nif_library_not_loaded).
