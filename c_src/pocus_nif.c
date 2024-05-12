@@ -44,40 +44,40 @@ void sha256_hash(const uint8_t[], size_t, uint32_t hash[static STATE_LEN]);
  */
 void
 sha256_hash(const uint8_t message[], size_t len, uint32_t hash[static STATE_LEN]) {
-	hash[0] = UINT32_C(0x6A09E667);
-	hash[1] = UINT32_C(0xBB67AE85);
-	hash[2] = UINT32_C(0x3C6EF372);
-	hash[3] = UINT32_C(0xA54FF53A);
-	hash[4] = UINT32_C(0x510E527F);
-	hash[5] = UINT32_C(0x9B05688C);
-	hash[6] = UINT32_C(0x1F83D9AB);
-	hash[7] = UINT32_C(0x5BE0CD19);
-	
-	#define LENGTH_SIZE 8  // In bytes
-	
-	size_t off;
-	for (off = 0; len - off >= BLOCK_LEN; off += BLOCK_LEN)
-		sha256_compress(&message[off], hash);
-	
-	uint8_t block[BLOCK_LEN] = {0};
-	size_t rem = len - off;
-	if (rem > 0)
-		memcpy(block, &message[off], rem);
-	
-	block[rem] = 0x80;
-	rem++;
-	if (BLOCK_LEN - rem < LENGTH_SIZE) {
-		sha256_compress(block, hash);
-		memset(block, 0, sizeof(block));
-	}
-	
-	block[BLOCK_LEN - 1] = (uint8_t)((len & 0x1FU) << 3);
-	len >>= 5;
-	for (int i = 1; i < LENGTH_SIZE; i++, len >>= 8)
-		block[BLOCK_LEN - 1 - i] = (uint8_t)(len & 0xFFU);
-	sha256_compress(block, hash);
-	
-	#undef LENGTH_SIZE
+  hash[0] = UINT32_C(0x6A09E667);
+  hash[1] = UINT32_C(0xBB67AE85);
+  hash[2] = UINT32_C(0x3C6EF372);
+  hash[3] = UINT32_C(0xA54FF53A);
+  hash[4] = UINT32_C(0x510E527F);
+  hash[5] = UINT32_C(0x9B05688C);
+  hash[6] = UINT32_C(0x1F83D9AB);
+  hash[7] = UINT32_C(0x5BE0CD19);
+
+  #define LENGTH_SIZE 8  // In bytes
+
+  size_t off;
+  for (off = 0; len - off >= BLOCK_LEN; off += BLOCK_LEN)
+    sha256_compress(&message[off], hash);
+
+  uint8_t block[BLOCK_LEN] = {0};
+  size_t rem = len - off;
+  if (rem > 0)
+    memcpy(block, &message[off], rem);
+
+  block[rem] = 0x80;
+  rem++;
+  if (BLOCK_LEN - rem < LENGTH_SIZE) {
+    sha256_compress(block, hash);
+    memset(block, 0, sizeof(block));
+  }
+
+  block[BLOCK_LEN - 1] = (uint8_t)((len & 0x1FU) << 3);
+  len >>= 5;
+  for (int i = 1; i < LENGTH_SIZE; i++, len >>= 8)
+    block[BLOCK_LEN - 1 - i] = (uint8_t)(len & 0xFFU);
+  sha256_compress(block, hash);
+
+  #undef LENGTH_SIZE
 }
 
 /*
@@ -136,7 +136,7 @@ pocus_sha256_sequential(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
   unsigned int block_size = 0;
   if (enif_get_uint(env, argv[2], &block_size) != true)
     return enif_make_badarg(env);
-  
+
   return enif_make_int(env, block_size);
 }
 
@@ -152,6 +152,3 @@ static ErlNifFunc nif_funcs[] = {
  *
  */
 ERL_NIF_INIT(pocus_nif, nif_funcs, NULL, NULL, NULL, NULL);
-  
-
-

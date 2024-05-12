@@ -16,10 +16,10 @@ Steps:
    in size.  KB is sometimes used interchangeably when referring to
    1024 byte kilobytes but KiB is precise in that it can only refer to
    1024 Bytes. 64KiB is 65535 bytes or 524280 bits.
-    
+
 2. Fill a 32B buffer with random entropy, this will represent a miner
    address on the network. 32B is 32 bytes and represent 256 bits.
-        
+
 3. Logically partition the 64KiB buffer from step 1 into 32B
    increments, for each 32B increment hash together the bytes of that
    increment with the “miner address” from step 2.  Then sequentially
@@ -31,7 +31,7 @@ Steps:
    only used as the head of the hash chain instead of included in each
    hash step. Feel free to use this method if it feels more
    appropriate.
-            
+
 4. This is a toy version of a packing mechanism suitable for a take
    home assignment. The packing (sequential hashing) should be done in
    C or Rust and be invoked using Erlang's Native Implemented Function
@@ -39,14 +39,14 @@ Steps:
    2 and the 32B of random entropy from the specified offset in the
    64KiB buffer from Step 1. The 32B segments should be packed in
    parallel across multiple cores as much as possible.
-                
+
 5. Once the 64KiB buffer is fully “packed” with the miners address,
    you will calculate a simple proof of custody with the following
    mechanism.
-                    
+
 6. Fill a 32B buffer with random bytes, we’ll pretend this is a recent
    blockhash.
-                        
+
 7. Use it as entropy to a pseudo random (deterministic) function to
    select a starting 32B offset in the packed buffer. Hash the 32B at
    that offset together with the blockhash from step 6. The chunk is
@@ -54,7 +54,7 @@ Steps:
    to. Each segment exists at an offset starting with 0. Another way
    to think of offset is a specific offset into the "segment index"
    for the Chunk.
-                            
+
 8. Use the resulting hash from step 7 to repeat the process 10 more
    times, appending the hashes into a list. In production a merkle
    tree would be built out of this list of hashes, but for the purpose
@@ -66,7 +66,7 @@ Steps:
    computing the location of subsequent 9 steps requires the output of
    the previous step. This ensures that the sequence of hashes for the
    proof cannot be calculated in parallel.
-                                
+
 9. Finally write some erlang code to validate the proof of custody
    generated in step 8. Another miner should be able to start with an
    unpacked 64KiB buffer, use the blockhash (from step 6), miner
@@ -95,12 +95,12 @@ references found on internet or generated using OpenAI.
   set of data items_. In blockchain technology, transactions within a
   block can be hashed together using a Merkle tree, resulting in a
   single hash that effectively represents all transactions.
-  
+
   - Combines many data items into one hash.
-  
+
   - Utilizes structures like Merkle trees for efficient data
     aggregation and verification.
-    
+
   - Commonly used to ensure data integrity and enable efficient
     verification processes (e.g., in blockchain transactions).
 
@@ -116,12 +116,12 @@ references found on internet or generated using OpenAI.
   block's header, creating a sequential chain of block hashes. This
   chain secures the entire blockchain by making it resistant to
   tampering.
-  
+
   - Data is processed in a sequence, one piece after another.
-  
+
   - Each piece of data can be dependent on the hash of the previous
     piece, creating a chain of hashes.
-    
+
   - Often used for creating hash chains or for situations where data
     needs to be timestamped or added in a specific order, such as in
     some forms of ledger or blockchain technology.
@@ -175,7 +175,7 @@ SHA-2 implementation. Others test have been conducted with:
  - [BearSSL](https://www.bearssl.org/)
  - [PolarSSL](https://polarssl.org/)
  - [WolfSSL](https://www.wolfssl.com/)
- 
+
 Those libraries offer barely the same speed over SHA-256. In
 conclusion, only Erlang crypto module implementation has been
 retained, but the NIF has been kept as example, here how to use it.

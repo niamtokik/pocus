@@ -98,7 +98,7 @@ execute(<<Block:(64*1024)/binary>>, <<Miner:32/binary>>, <<Secret:32/binary>>) -
     io:format("done: ~P~n", [HashList,10]),
 
     io:format("sequential hashing... "),
-    HashRound = << <<(sequential(Hash, ?SEQUENTIAL_LOOP))/binary>> 
+    HashRound = << <<(sequential(Hash, ?SEQUENTIAL_LOOP))/binary>>
                    || Hash <- HashList >>,
     io:format("done: ~P~n", [HashRound,10]),
 
@@ -143,7 +143,7 @@ merkle(Chunks, Secret) ->
       Limit  :: pos_integer(),
       Return :: binary().
 
-merkle(Chunks, Secret, Limit) 
+merkle(Chunks, Secret, Limit)
   when Limit > 0 ->
     merkle(Chunks, Secret, Limit, []).
 
@@ -355,7 +355,7 @@ sequential(Data) ->
       Limit  :: pos_integer(),
       Return :: binary().
 
-sequential(Data, Limit) 
+sequential(Data, Limit)
   when Limit > 0 ->
     State = crypto:hash_init(?HASH),
     NewState = crypto:hash_update(State, Data),
@@ -372,7 +372,7 @@ sequential(Data, Limit)
       State   :: reference(),
       Return  :: binary().
 
-sequential_loop(Counter, Limit, State) 
+sequential_loop(Counter, Limit, State)
   when Counter =:= Limit ->
     crypto:hash_final(State);
 sequential_loop(Counter, Limit, State) ->
@@ -428,7 +428,7 @@ sequential_par_loop_receive(DataLength, Jobs, Payloads, Buffer) ->
 take(List, Amount) -> take(List, Amount, []).
 take(T, 0, Buffer) -> {Buffer, T};
 take([H|T], Amount, Buffer) -> take(T, Amount-1, Buffer ++ [H]);
-take(T, Amount, Buffer) 
+take(T, Amount, Buffer)
   when length(T) < Amount ->
     {Buffer, T}.
 

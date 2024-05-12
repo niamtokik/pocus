@@ -23,13 +23,13 @@
 %%% packing algorithm, with a support of different hash
 %%% functions. Here a schema of the procedure.
 %%%
-%%%    
+%%%
 %%% ```
 %%%   ______  \
 %%%  |      |  | A seed is made of mining address as binary term
 %%%  | seed |  | (mandatory) and can also use a partition id and
-%%%  |______|  | chunk id (optional). 
-%%%     ||    /         
+%%%  |______|  | chunk id (optional).
+%%%     ||    /
 %%%    _||_         ____  \
 %%%   _\__/_       |    |  |
 %%%  |      |      |    |  |
@@ -38,7 +38,7 @@
 %%%     ||         |    |  |
 %%%    _||_        |____|  |
 %%%   _\__/_       |    |  | A chunk, where S1, S2, SN are segments
-%%%  |      |      |    |  | of the same size. 
+%%%  |      |      |    |  | of the same size.
 %%%  | hash |----> | S2 |  |
 %%%  |______|      |    |  |
 %%%     ||         |    |  |
@@ -92,7 +92,7 @@ create(MiningAddress) ->
 %%
 %% ```
 %% Result = create(<<"MiningAddress">>, #{ chunk_id => <<1:32>>
-%%                                       , partition_id => <<1:32>> 
+%%                                       , partition_id => <<1:32>>
 %%                                       }).
 %% '''
 %%
@@ -145,8 +145,8 @@ create(MiningAddress, Opts) ->
       State :: map(),
       Return :: binary().
 
-create2(Segment, Buffer, State = #{chunk_size := ChunkSize, counter := Counter}) 
-  when Counter >= ChunkSize -> 
+create2(Segment, Buffer, State = #{chunk_size := ChunkSize, counter := Counter})
+  when Counter >= ChunkSize ->
     ?LOG_DEBUG("~p", [{?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, [Segment, Buffer, State]}]),
     lists:reverse(Buffer);
 create2(Segment, Buffer, State = #{counter := Counter, hash_info := #{size := HashSize}}) ->
@@ -184,7 +184,7 @@ create_multi(Multi) ->
     Target = self(),
 
     % spawn linerarilly all tasks
-    [ spawn_link(fun() -> spawn_multi(Target, Id, MiningAddress, Opts) end) 
+    [ spawn_link(fun() -> spawn_multi(Target, Id, MiningAddress, Opts) end)
       || {Id, MiningAddress, Opts} <- Multi ],
 
     % wait for messages.
@@ -203,7 +203,7 @@ create_multi2(_Multi, 0, Buffer) ->
     {ok, lists:sort(Buffer)};
 create_multi2(Multi, Length, Buffer) ->
     % wait for all messages or die
-    receive 
+    receive
         {?MODULE, Id, MiningAddress, Opts, Result} ->
             NewBuffer = [{Id, MiningAddress, Opts, Result}|Buffer],
             create_multi2(Multi, Length-1, NewBuffer)
@@ -225,9 +225,9 @@ create_multi2(Multi, Length, Buffer) ->
       Message       :: {?MODULE, Id, MiningAddress, Opts, Result},
       Result        :: binary(),
       Return        :: {ok, Message}.
-      
+
 spawn_multi(Target, Id, MiningAddress, Opts) ->
     Result = create(MiningAddress, Opts),
-    Message = {?MODULE, Id, MiningAddress, Opts, Result}, 
+    Message = {?MODULE, Id, MiningAddress, Opts, Result},
     Target ! Message,
     {ok, Message}.

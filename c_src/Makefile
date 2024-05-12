@@ -18,7 +18,7 @@
 # -------------------------------------------------------------------
 #
 # GNU Makefile only support openbsd and linux distribution
-# 
+#
 ######################################################################
 SYSTEM = $(shell uname -s)
 CCFLAGS = -O1 -march=native -finline-functions -Wall -Werror -Wmissing-prototypes -fPIC
@@ -26,15 +26,15 @@ CCFLAGS = -O1 -march=native -finline-functions -Wall -Werror -Wmissing-prototype
 # Usually, with default package manager, Linux distributions are
 # storing Erlang files into /usr/lib
 ifeq ($(SYSTEM),Linux)
-  CCFLAGS += -I /usr/lib/erlang/usr/include 
-  CCFLAGS += -L /usr/lib/erlang/usr/lib
+	CCFLAGS += -I /usr/lib/erlang/usr/include
+	CCFLAGS += -L /usr/lib/erlang/usr/lib
 endif
 
 # OpenBSD uses Erlang special version in /usr/local/lib/erlang*
 ifeq ($(SYSTEM),OpenBSD)
-  ERL_VERSION ?= 25
-  CCFLAGS += -I /usr/local/lib/erlang$(ERL_VERSION)/usr/include 
-  CCFLAGS += -L /usr/local/lib/erlang$(ERL_VERSION)/usr/lib
+	ERL_VERSION ?= 25
+	CCFLAGS += -I /usr/local/lib/erlang$(ERL_VERSION)/usr/include
+	CCFLAGS += -L /usr/local/lib/erlang$(ERL_VERSION)/usr/lib
 endif
 
 # main command
@@ -53,7 +53,7 @@ clean:
 	-rm sha256_test sha256_test_asm
 
 # default NIF using C code
-pocus_nif.so: 
+pocus_nif.so:
 	$(CC) -shared pocus_nif.c sha256.c -o $@
 
 # NIF using assembly
@@ -67,4 +67,3 @@ sha256_test:
 # ASM code test
 sha256_test_asm:
 	$(CC) sha256_test.c sha256_x86_64.S -o $@
-

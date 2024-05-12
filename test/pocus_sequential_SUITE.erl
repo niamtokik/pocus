@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author  <user@localhost>
-%%% @copyright (C) 2024, 
+%%% @copyright (C) 2024,
 %%% @doc
 %%%
 %%% @end
@@ -103,9 +103,10 @@ groups() ->
 %% Reason = term()
 %% @end
 %%--------------------------------------------------------------------
-all() -> 
+all() ->
     [ simple
     , seed
+    , roll
     ].
 
 %%--------------------------------------------------------------------
@@ -113,7 +114,7 @@ all() ->
 %% Info = [tuple()]
 %% @end
 %%--------------------------------------------------------------------
-simple() -> 
+simple() ->
     [].
 
 %%--------------------------------------------------------------------
@@ -125,32 +126,47 @@ simple() ->
 %% Comment = term()
 %% @end
 %%--------------------------------------------------------------------
-simple(_Config) -> 
+simple(_Config) ->
     {ok, Pid} = pocus_sequential:start_link(),
 
     % first hash
     ok = pocus_sequential:push(Pid, "test"),
-    <<159,134,208,129,136,76,125,_/binary>> 
-        = Hash1
+    {ok, <<159,134,208,129,136,76,125,_/binary>>}
+        = {ok, Hash1}
         = pocus_sequential:pull(Pid),
 
     % reinject previous hash
     ok = pocus_sequential:push(Pid, Hash1),
-    <<114,7,159,203,43,56,25,213,76,_/binary>>
-        = _Hash2
+    {ok, <<114,7,159,203,43,56,25,213,76,_/binary>>}
+        = {ok, _Hash2}
         = pocus_sequential:pull(Pid).
 
 %%--------------------------------------------------------------------
 %%
 %%--------------------------------------------------------------------
-seed() ->
-    [].
-
-%%--------------------------------------------------------------------
-%%
-%%--------------------------------------------------------------------
+seed() -> [].
 seed(_Config) ->
+    % start new process inialized with "test" string
     {ok, Pid} = pocus_sequential:start_link([{seed, "test"}]),
-    <<159,134,208,129,136,76,125,_/binary>>
+    {ok, <<159,134,208,129,136,76,125,_/binary>>}
         = pocus_sequential:pull(Pid).
 
+%%--------------------------------------------------------------------
+%%
+%%--------------------------------------------------------------------
+roll() -> [].
+roll(_Config) ->
+    % start new process inialized with "test" string
+    {ok, Pid} = pocus_sequential:start_link([{seed, "test"}]),
+    {ok, <<159,134,208,129,136,76,125,_/binary>>}
+        = pocus_sequential:pull(Pid),
+
+    % roll 1 time
+    ok = pocus_sequential:roll(Pid),
+    {ok, <<114,7,159,203,43,56,25,213,76,_/binary>>}
+        = pocus_sequential:pull(Pid),
+
+    % roll 1000 times
+    ok = pocus_sequential:roll(Pid, 1000),
+    {ok, <<234,70,240,114,239,91,78,203,_/binary>>}
+        = pocus_sequential:pull(Pid).
