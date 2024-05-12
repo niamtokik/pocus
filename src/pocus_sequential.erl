@@ -126,11 +126,15 @@
 %%%
 %%% @todo add hash_trunc feature to truncate data before being added
 %%%       into pack buffer
-%%%
+%%% @todo creates types and do DRY on specificatoin
+%%% @todo ensures documentation can be built
+%%% @todo increases test coverage
+%%% @todo defines terms used in this implementation
+%%% @todo adds complexity analyzer features
 %%%===================================================================
 -module(pocus_sequential).
 -export([start_link/0, start_link/1, start_link/2]).
--export([pull/1, push/2]).
+-export([info/1, pull/1, push/2, drip/2]).
 -export([roll/1, roll/2]).
 -export([push_and_pull/2, pull_and_push/2]).
 -export([push_and_pack/2, pack_and_push/2]).
@@ -195,7 +199,19 @@ start_link(Args, Opts) ->
     gen_server:start_link(?MODULE, Args, Opts).
 
 %%--------------------------------------------------------------------
-%% @doc reset process state based on passed parameters during
+%% @doc API. Resets process state based on passed parameters during
+%% initialization.
+%% @end
+%%--------------------------------------------------------------------
+-spec info(Process) -> Return when
+      Process :: pid() | atom(),
+      Return  :: {ok, proplists:proplists()}.
+
+info(Pid) ->
+    gen_server:call(Pid, info, ?TIMEOUT).
+
+%%--------------------------------------------------------------------
+%% @doc API. Resets process state based on passed parameters during
 %% initialization.
 %% @end
 %%--------------------------------------------------------------------
@@ -205,7 +221,7 @@ reset(Pid) ->
     gen_server:cast(Pid, reset).
 
 %%--------------------------------------------------------------------
-%% @doc uses current hash state output as new data.
+%% @doc API. Uses current hash state output as new data.
 %% @see roll/2
 %% @end
 %%--------------------------------------------------------------------
@@ -217,7 +233,7 @@ roll(Pid) ->
     gen_server:cast(Pid, roll).
 
 %%--------------------------------------------------------------------
-%% @doc uses curent hash state output as new data N times.
+%% @doc API. Uses curent hash state output as new data N times.
 %% @end
 %%--------------------------------------------------------------------
 -spec roll(Process, LoopCounter) -> Return when
@@ -230,7 +246,7 @@ roll(Pid, Loop)
     gen_server:cast(Pid, {roll, Loop}).
 
 %%--------------------------------------------------------------------
-%% @doc returns packaged hash.
+%% @doc API. Returns packaged hash.
 %% @end
 %%--------------------------------------------------------------------
 -spec package(Process) -> Return when
@@ -241,7 +257,7 @@ package(Pid) ->
     gen_server:call(Pid, package, ?TIMEOUT).
 
 %%--------------------------------------------------------------------
-%% @doc add current hash state output into buffer (package).
+%% @doc API. Adds current hash state output into buffer (package).
 %% @end
 %%--------------------------------------------------------------------
 -spec pack(Process) -> Return when
@@ -252,7 +268,7 @@ pack(Pid) ->
     gen_server:cast(Pid, pack).
 
 %%--------------------------------------------------------------------
-%% @doc pull the current hash state output.
+%% @doc API. Pulls the current hash state output.
 %% @end
 %%--------------------------------------------------------------------
 -spec pull(Process) -> Return when
@@ -263,7 +279,7 @@ pull(Pid) ->
     gen_server:call(Pid, pull, ?TIMEOUT).
 
 %%--------------------------------------------------------------------
-%% @doc push new values into hash state.
+%% @doc API. Pushes new values into hash state.
 %% @end
 %%--------------------------------------------------------------------
 -spec push(Process, Data) -> Return when
@@ -275,7 +291,7 @@ push(Pid, Data) ->
     gen_server:cast(Pid, {push, Data}).
 
 %%--------------------------------------------------------------------
-%% @doc pushes first and then pack.
+%% @doc API. Pushes first and then pack.
 %% @see push/2
 %% @see pack/1
 %% @end
@@ -289,7 +305,7 @@ push_and_pack(Pid, Data) ->
     gen_server:cast(Pid, {push_and_pack, Data}).
 
 %%--------------------------------------------------------------------
-%% @doc packing first then pushes.
+%% @doc API. Packing first then pushes.
 %% @see pack/1
 %% @see push/2
 %% @end
@@ -303,7 +319,7 @@ pack_and_push(Pid, Data) ->
     gen_server:cast(Pid, {pack_and_push, Data}).
 
 %%--------------------------------------------------------------------
-%% @doc pushes first and then pull
+%% @doc API. Pushes first and then pull
 %% @see push/2
 %% @see pull/1
 %% @end
@@ -317,7 +333,7 @@ push_and_pull(Pid, Data) ->
     gen_server:call(Pid, {push_and_pull, Data}, ?TIMEOUT).
 
 %%--------------------------------------------------------------------
-%% @doc pulling first and then pushing
+%% @doc API. Pulling first and then pushing
 %% @see pull/1
 %% @see push/2
 %% @end
@@ -331,8 +347,17 @@ pull_and_push(Pid, Data) ->
     gen_server:call(Pid, {pull_and_push, Data}, ?TIMEOUT).
 
 %%--------------------------------------------------------------------
+%% @doc API. Pushing a drip (binary/bitstring) values using standard
+%% messages, can be used without using `gen_server' interfaces.
+%% @end
+%%--------------------------------------------------------------------
+drip(Pid, Drip)
+  when is_binary(Drip); is_bitstring(Drip) ->
+    Pid ! {drip, Drip}.
+
+%%--------------------------------------------------------------------
 %% @hidden
-%% @doc
+%% @doc gen_server callback. Initializes FSM with arguments.
 %% @end
 %%--------------------------------------------------------------------
 init(Args) ->
@@ -344,13 +369,20 @@ init(Args) ->
 
 %%--------------------------------------------------------------------
 %% @hidden
-%% @doc
+%% @doc internal function, initialize hash state.
 %% @end
 %%--------------------------------------------------------------------
 init_hash(Args, InitState) ->
     Hash = proplists:get_value(hash, Args, sha256),
-    NewState = InitState#?MODULE{ hash = Hash },
-    init_import(Args, NewState).
+    Supports = crypto:supports(hashs),
+    CheckSupports = fun(X) -> X =:= Hash end,
+    case lists:filter(CheckSupports, Supports) of
+        [] ->
+            {error, [{hash, Hash}]};
+        [_|_] ->
+            NewState = InitState#?MODULE{ hash = Hash },
+            init_import(Args, NewState)
+    end.
 
 %%--------------------------------------------------------------------
 %% @hidden
@@ -369,7 +401,9 @@ init_import(Args, State = #?MODULE{ hash = Hash }) ->
             NewState = State#?MODULE{ hash_state = Reference
                                     , hash_import_state = Reference
                                     },
-            init_seed(Args, NewState)
+            init_seed(Args, NewState);
+        _ ->
+            {error, [{hash_state, ImportedHashState}]}
     end.
 
 %%--------------------------------------------------------------------
@@ -381,11 +415,30 @@ init_seed(Args, State = #?MODULE{ hash_state = HashState }) ->
     Seed = proplists:get_value(seed, Args, undefined),
     case Seed of
         undefined ->
-            init_final(Args, State);
-        Value ->
-            NewHashState = hash_update(HashState, Value, State),
+            init_pack_size(Args, State);
+        _ when is_binary(Seed); is_list(Seed); is_bitstring(Seed) ->
+            NewHashState = hash_update(HashState, Seed, State),
             NewState = State#?MODULE{ hash_state = NewHashState },
-            init_final(Args, NewState)
+            init_pack_size(Args, NewState);
+        _ ->
+            {error, [{seed, Seed}]}
+    end.
+
+%%--------------------------------------------------------------------
+%% @hidden
+%% @doc
+%% @end
+%%--------------------------------------------------------------------
+init_pack_size(Args, State) ->
+    PackSize = proplists:get_value(pack_size, Args, undefined),
+    case PackSize of
+        undefined ->
+            init_final(Args, State);
+        _ when is_integer(PackSize), PackSize > 0 ->
+            NewState = State#?MODULE{ pack_size = PackSize },
+            init_final(Args, NewState);
+        _ ->
+            {error, [{pack_size, PackSize}]}
     end.
 
 %%--------------------------------------------------------------------
@@ -398,9 +451,25 @@ init_final(_Args, State) ->
 
 %%--------------------------------------------------------------------
 %% @hidden
-%% @doc
+%% @doc gen_server callback.
 %% @end
 %%--------------------------------------------------------------------
+handle_call( Msg = info
+           , From
+           , State = #?MODULE{ hash = Hash
+                             , args = Args
+                             , pack_size = PackSize
+                             , pack_limit = PackLimit
+                             , seed = Seed
+                             }) ->
+    ?LOG_DEBUG("~p", [{?MODULE, ?FUNCTION_NAME, received, {Msg, From, State}}]),
+    Info = [ {hash, Hash}
+           , {args, Args}
+           , {pack_size, PackSize}
+           , {pack_limit, PackLimit}
+           , {seed, Seed}
+           ],
+    {reply, {ok, Info}, State};
 handle_call( Msg = package
            , From
            , State = #?MODULE{ pack = Pack }) ->
@@ -433,7 +502,7 @@ handle_call( Msg = {push_and_pull, Data}
 
 %%--------------------------------------------------------------------
 %% @hidden
-%% @doc
+%% @doc gen_server callback.
 %% @end
 %%--------------------------------------------------------------------
 handle_cast(Msg = pack
@@ -503,16 +572,9 @@ handle_cast( Msg = roll
     NewHashState = hash_update(HashState, Output, State),
     NewState = State#?MODULE{ hash_state = NewHashState },
     {noreply, NewState};
-handle_cast(Msg = {roll, Counter}
-           , State = #?MODULE{ hash_state = HashState }) ->
+handle_cast(Msg = {roll, Counter}, State = #?MODULE{}) ->
     ?LOG_DEBUG("~p", [{?MODULE, ?FUNCTION_NAME, received, {Msg, State}}]),
-    Fun = fun Loop(HS, 0) -> HS;
-              Loop(HS, C) ->
-                  O = hash_final(HS, State),
-                  NHS = hash_update(HS, O, State),
-                  Loop(NHS, C-1)
-          end,
-    NewHashState = Fun(HashState, Counter),
+    NewHashState = roll_loop(Counter, State),
     NewState = State#?MODULE{ hash_state = NewHashState },
     {noreply, NewState};
 handle_cast( Msg = reset
@@ -523,12 +585,38 @@ handle_cast( Msg = reset
 
 %%--------------------------------------------------------------------
 %% @hidden
-%% @doc
+%% @doc gen_server callback.
 %% @end
 %%--------------------------------------------------------------------
+handle_info({drip, Drip}, State = #?MODULE{ hash_state = HashState })
+  when is_binary(Drip); is_bitstring(Drip) ->
+    NewHashState = hash_update(HashState, Drip, State),
+    NewState = State#?MODULE{ hash_state = NewHashState },
+    {noreply, NewState};
 handle_info(Msg, State) ->
     ?LOG_DEBUG("~p", [{?MODULE, ?FUNCTION_NAME, received, {Msg, State}}]),
     {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @hidden
+%% @doc internal function. "rolls" the hash with its own output.
+%% @end
+%%--------------------------------------------------------------------
+roll_loop(Counter, State = #?MODULE{ hash_state = HashState })
+  when is_integer(Counter), Counter > 0 ->
+    roll_loop(HashState, Counter, State).
+
+%%--------------------------------------------------------------------
+%% @hidden
+%% @doc internal function. "rolls" the hash with its own output.
+%% @end
+%%--------------------------------------------------------------------
+roll_loop(HashState, 0, _State) ->
+    HashState;
+roll_loop(HashState, Counter, State) ->
+    Output = hash_final(HashState, State),
+    NewHashState = hash_update(HashState, Output, State),
+    roll_loop(NewHashState, Counter-1, State).
 
 %%--------------------------------------------------------------------
 %% @hidden

@@ -46,8 +46,8 @@ priv_dir() ->
             Val
     end.
 
-sha256(Data) ->
+sha256(_Data) ->
     exit(nif_library_not_loaded).
 
-sha256_sequential(Data, Seed, Blocksize) ->
+sha256_sequential(_Data, _Seed, _Blocksize) ->
     exit(nif_library_not_loaded).

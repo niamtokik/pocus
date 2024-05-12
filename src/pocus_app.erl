@@ -17,6 +17,8 @@
 %%%
 %%% @author Mathieu Kerjouan
 %%% @copyright 2024 (c) Mathieu Kerjouan
+%%% @doc
+%%% @end
 %%%===================================================================
 -module(pocus_app).
 -behaviour(application).
