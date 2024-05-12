@@ -74,14 +74,145 @@ Steps:
    packing the chunks of the Proof of Custody another miner should
    arrive at the same set of 10 hashes.
 
+## Definitions
+
+The tasks assigned were confusing, because of the terms used without
+clear definition. This document is rewriting things based on
+references found on internet or generated using OpenAI.
+
+- **Hash Packing** (cryto-currency): **Hash packing** can be
+  interpreted as a method where _multiple discrete data items are
+  combined into a single composite data structure_ and then _hashed
+  using a cryptographic hash function to produce a single output
+  hash_. This process is commonly implemented using data structures
+  like Merkle trees, as previously discussed. Here, the idea is to
+  _aggregate data efficiently so that the integrity and authenticity
+  of the entire dataset can be verified through a single hash_, the
+  Merkle root. **Hash packing** is often used to create a compact and
+  efficient representation of a large dataset for purposes like
+  proving data integrity without needing to handle the entire
+  dataset. **Hash Packing** output is a _single hash representing a
+  set of data items_. In blockchain technology, transactions within a
+  block can be hashed together using a Merkle tree, resulting in a
+  single hash that effectively represents all transactions.
+  
+  - Combines many data items into one hash.
+  
+  - Utilizes structures like Merkle trees for efficient data
+    aggregation and verification.
+    
+  - Commonly used to ensure data integrity and enable efficient
+    verification processes (e.g., in blockchain transactions).
+
+- **Sequential Hashing** (cryptography): **Sequential** Hashing refers
+  to the process of _applying a hash function to data
+  sequentially_. This could mean hashing data in a series where _the
+  output of hashing one piece of data may be used as input for the
+  next hashing operation, or continuously feeding data into a hash
+  function as it is received_. **Sequential hashing** is typically
+  used in scenarios where the order and continuity of data are
+  critical, such as in securing a timeline of records or events. In a
+  blockchain, each block's header contains the hash of the previous
+  block's header, creating a sequential chain of block hashes. This
+  chain secures the entire blockchain by making it resistant to
+  tampering.
+  
+  - Data is processed in a sequence, one piece after another.
+  
+  - Each piece of data can be dependent on the hash of the previous
+    piece, creating a chain of hashes.
+    
+  - Often used for creating hash chains or for situations where data
+    needs to be timestamped or added in a specific order, such as in
+    some forms of ledger or blockchain technology.
+
+- **Proof of Custody** (blockchain/crypto-currency): **Proof of
+  custody** in the context of cryptocurrency and blockchain technology
+  generally refers to a mechanism or protocol by which a _participant_
+  (often called a prover) _can demonstrate to others_ (called
+  verifiers) _that they correctly possess certain data without
+  actually revealing the data itself_. This is particularly important
+  in scenarios where large amounts of data are stored off-chain or in
+  decentralized storage systems, as in the case of some scaling
+  solutions like sharding.
+
 ## Build
 
 ```sh
 rebar3 compile
 ```
 
+## Test
+
+```sh
+rebar3 ct
+```
+
+## Usage
+
+```erlang
+% create a new "plan"
+{ok, R} = pocus:execute().
+
+% check it
+true = pocus:execute(R).
+```
+
 ## Design
 
+### SHA-256
+
+This exercise has been solved using only
+[`crypto`](https://www.erlang.org/doc/man/crypto.html#) module. A NIF
+using [fast SHA-256
+implementation](https://www.nayuki.io/page/fast-sha2-hashes-in-x86-assembly)
+has been used, but this implementation does not support [SHA2
+extensions](https://en.wikipedia.org/wiki/Intel_SHA_extensions), that
+means this code is slower than
+[OpenSSL](https://www.openssl.org/)/[LibreSSL](https://www.libressl.org/)
+SHA-2 implementation. Others test have been conducted with:
+
+ - [BearSSL](https://www.bearssl.org/)
+ - [PolarSSL](https://polarssl.org/)
+ - [WolfSSL](https://www.wolfssl.com/)
+ 
+Those libraries offer barely the same speed over SHA-256. In
+conclusion, only Erlang crypto module implementation has been
+retained, but the NIF has been kept as example, here how to use it.
+
+```sh
+# build pocus_nif.so and copy it into priv
+cd c_src
+# gmake on openbsd.
+make
+cp pocus_nif.so ../priv
+cd ..
+
+# execute rebar3 shell
+rebar3 shell
 ```
 
+```erlang
+% start playing with the implementation
+pocus_nif:sha256(<<"test">>).
 ```
+
+This implementation is ~10x slower than crypto module using
+OpenSSL/LibreSSL.
+
+### Parallel/Distributed Computing
+
+To improve the computation on some part of the code, in particular in
+chunk generation part, a small jobs manager has been created, dividing
+the computation in dedicated processus, spawned on demand. A more
+classical method with a pool of worker already spawned could have been
+created though.
+
+### Future Work
+
+The current model is not really scalable and flexible. A
+[`pocus_sequential`](src/pocus_sequential.erl) module defined as
+`gen_server` would have probably better. When started a process would
+then keep the state of the computation and all event would have been
+treated as step to produce the final hash. A tested PoC has been also
+added in this exercise.
