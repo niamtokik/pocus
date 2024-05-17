@@ -248,3 +248,7 @@ Hashing](https://eprint.iacr.org/2022/283.pdf) by Aldo Gunsing
 [SimHash: Hash-based Similarity
 Detection](http://www.webrankinfo.com/dossiers/wp-content/uploads/simhash.pdf)
 by Caitlin Sadowski and Greg Levin
+
+[In Defense of MinHash Over
+SimHash](http://proceedings.mlr.press/v33/shrivastava14.pdf) by
+Anshumali Shrivastava and Ping Li
