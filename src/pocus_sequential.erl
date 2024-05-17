@@ -221,9 +221,16 @@
 %%%                   |  |_______|                       |
 %%%                   |                                  |
 %%%                    \________________________________/
-%%%                                              
+%%%
 %%%
 %%% '''
+%%%
+%%% == Planning ==
+%%%
+%%% ```
+%%%
+%%% '''
+%%%
 %%%
 %%% @end
 %%%
@@ -253,6 +260,9 @@
 %%% @todo add a "plan" support. when a message is pushed, it will
 %%%       follow a plan, for example, roll + pack + roll + pack and so
 %%%       on.
+%%%
+%%% @todo create a crack function to automatically execute a plan
+%%%       and find a correspondance
 %%%
 %%%===================================================================
 -module(pocus_sequential).
@@ -600,7 +610,7 @@ message(Payload) ->
 %% @doc gen_server callback. Initializes FSM with arguments.
 %% @end
 %%--------------------------------------------------------------------
-init(#message{ payload = {start, Args} 
+init(#message{ payload = {start, Args}
              , node = Node
              , pid = Pid
              , time = Time
@@ -726,7 +736,7 @@ init_final(_Args, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call( _Msg = #message{ node = Node
-                            , pid = Pid 
+                            , pid = Pid
                             }
            , _From
            , State = #?MODULE{ mode = private

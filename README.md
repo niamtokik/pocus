@@ -1,78 +1,87 @@
 # (P)roof (o)f (Cus)tody
 
-Summary:
+`pocus` project aims to offer a flexible way to produce cryptographic
+hashes using fast and distributed computations. This project should
+offer a framework providing a high level abstraction for different
+kind of methods, mechanisms and strategies used in cryptography.
 
-You'll need to implement a light version of a mechanism known as
-"packing" which essentially encrypts chunks of data in Irys's chain
-such that you can provide it's been uniquely stored. There is
-practically zero documentation online for this but we've provided
-granular steps below.
+Keywords: Merkle Trees; Hash Chains; Sequential hashing; Hash Packing;
+Bloom Filters; Consistent Hashing; Hash Pointers; Cuckoo Hashing;
+Perfect Hashing; Hash Graphs; Salted Hashing; Hash Tables; Hash-based
+Encryption; Prefix Hash Tree; Sparse Merkle Trees; Hash-based
+Signatures; Incremental Hashing; Adaptive Hashing; Deduplication
+Hashing; Hash-Driven Key Stretching; Homomorphic Hashing;
+Deterministic Hashing; Trapdoor Hash Functions; SimHash; Keyed Hash
+Functions; Hash Tree Roots; Hash Aggregation; Hash Rings; Composite
+Hash Functions.
 
-Steps:
+## Build
 
-1. Fill a 64KiB buffer with random entropy, this will represent data
-   stored on the network. 64KiB denotes 64 Kilobytes that are 1024
-   bytes in size, whereas KB indicates kilobytes that are 1000 Bytes
-   in size.  KB is sometimes used interchangeably when referring to
-   1024 byte kilobytes but KiB is precise in that it can only refer to
-   1024 Bytes. 64KiB is 65535 bytes or 524280 bits.
+```sh
+rebar3 compile
+```
 
-2. Fill a 32B buffer with random entropy, this will represent a miner
-   address on the network. 32B is 32 bytes and represent 256 bits.
+## Test
 
-3. Logically partition the 64KiB buffer from step 1 into 32B
-   increments, for each 32B increment hash together the bytes of that
-   increment with the “miner address” from step 2.  Then sequentially
-   hash the resulting bytes 1,000,000 times using SHA-256. Once
-   finished, write the bytes of the resulting hash sequence back to
-   the same location in the 64KiB buffer that was used as the source
-   of entropy. The description here varies somewhat from what is
-   described in the take home steps, in that the mining address is
-   only used as the head of the hash chain instead of included in each
-   hash step. Feel free to use this method if it feels more
-   appropriate.
+```sh
+rebar3 ct
+```
 
-4. This is a toy version of a packing mechanism suitable for a take
-   home assignment. The packing (sequential hashing) should be done in
-   C or Rust and be invoked using Erlang's Native Implemented Function
-   (NIF) interface. The inputs should be the mining address from step
-   2 and the 32B of random entropy from the specified offset in the
-   64KiB buffer from Step 1. The 32B segments should be packed in
-   parallel across multiple cores as much as possible.
+## Usage
 
-5. Once the 64KiB buffer is fully “packed” with the miners address,
-   you will calculate a simple proof of custody with the following
-   mechanism.
+```erlang
+% create a new "plan"
+{ok, R} = pocus:execute().
 
-6. Fill a 32B buffer with random bytes, we’ll pretend this is a recent
-   blockhash.
+% check it
+true = pocus:execute(R).
+```
 
-7. Use it as entropy to a pseudo random (deterministic) function to
-   select a starting 32B offset in the packed buffer. Hash the 32B at
-   that offset together with the blockhash from step 6. The chunk is
-   divided into 32B segments that the SHA-256 hashes are written
-   to. Each segment exists at an offset starting with 0. Another way
-   to think of offset is a specific offset into the "segment index"
-   for the Chunk.
+## Objectives
 
-8. Use the resulting hash from step 7 to repeat the process 10 more
-   times, appending the hashes into a list. In production a merkle
-   tree would be built out of this list of hashes, but for the purpose
-   of a take home assignment we’ll use this list as the Proof of
-   Custody. repeat the process from step 7, but instead of using the
-   block hash to initialize the random function for the first step in
-   the sequence, use the output of the operation in step 7 as the
-   input to the next round.  This ensures that after the first step,
-   computing the location of subsequent 9 steps requires the output of
-   the previous step. This ensures that the sequence of hashes for the
-   proof cannot be calculated in parallel.
+ - Academic and educational purpose
+  - [ ] Documentation
+  - [ ] Test
+  - [ ] Notes and References
 
-9. Finally write some erlang code to validate the proof of custody
-   generated in step 8. Another miner should be able to start with an
-   unpacked 64KiB buffer, use the blockhash (from step 6), miner
-   address (from step step 2) and proof of custody (from Step 8). By
-   packing the chunks of the Proof of Custody another miner should
-   arrive at the same set of 10 hashes.
+ - [ ] High Level Interfaces (methods)
+   - [ ] Sequential Hashing
+   - [ ] Hash Packing
+   - [ ] SimHash
+
+ - [ ] Low Level Interfaces
+   - [ ] BearSSL
+   - [ ] PolarSSL
+   - [ ] WolfSSL
+   - [ ] Pure C
+   - [ ] Pure Assembly (x86-64/risc-v)
+
+ - [ ] Cryptographic Hash Functions Support
+   - [ ] md4
+   - [ ] md5
+   - [ ] md6
+   - [ ] sha1
+   - [ ] sha-2 family
+   - [ ] sha-3 family
+   - [ ] blake family
+   - [ ] ripemd160
+   - [ ] skein
+   - [ ] whirlpool
+   - [ ] gost
+
+ - [ ] Non-Cryptographic Hash Functions Support
+   - [ ] Fast-Hash
+   - [ ] Bernstein Hash
+   - [ ] GxHash
+   - [ ] pHash
+   - [ ] dHash
+
+## History
+
+This project has been created at first as an assignment for an
+interview. Unfortunately during the implementation, I found definition
+on certain terms were not clear. Even more, no high level
+implementations in Erlang were available.
 
 ## Definitions
 
@@ -136,28 +145,6 @@ references found on internet or generated using OpenAI.
   decentralized storage systems, as in the case of some scaling
   solutions like sharding.
 
-## Build
-
-```sh
-rebar3 compile
-```
-
-## Test
-
-```sh
-rebar3 ct
-```
-
-## Usage
-
-```erlang
-% create a new "plan"
-{ok, R} = pocus:execute().
-
-% check it
-true = pocus:execute(R).
-```
-
 ## Design
 
 ### SHA-256
@@ -216,3 +203,48 @@ The current model is not really scalable and flexible. A
 then keep the state of the computation and all event would have been
 treated as step to produce the final hash. A tested PoC has been also
 added in this exercise.
+
+## References and Resources
+
+[Choosing Best Hashing Strategies and Hash
+Functions](https://gdeepak.com/pubs/choosing%20best%20hashing%20strategies%20and%20hash%20functions.pdf)
+by Mahima Singh and Deepak Garg
+
+[Parallel cryptographic hashing: Developments in the last 25
+years](https://www.tandfonline.com/doi/abs/10.1080/01611194.2019.1609130)
+by Neha Kishore and Priya Raina
+
+[Cipher and Hash Function Design Strategies based on linear and
+differential
+cryptanalysis](https://cs.ru.nl/~joan/papers/JDA_Thesis_1995.pdf) by
+Joan Daemen
+
+[Analysis and Design of Cryptographic Hash
+Functions](https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=f3899323a7b6d060ce720e6cb6e97c390164ef63)
+by Bart PRENEEL
+
+### Sequential Hashing
+
+[Sequential Hashing with Minimum
+Padding](https://www.mdpi.com/2410-387X/2/2/11/pdf) by Shoichi Hirose
+
+[Suffcient conditions for sound tree and sequential hashing
+modes](https://eprint.iacr.org/2009/210.pdf) by Guido Bertoni, Joan
+Daemen, Michaël Peeters, and Gilles Van Assche
+
+[New Methodes for Sequential Hashing with
+Supertrace](https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=57d948a0782799c13148fe05882020687ad87789)
+by Jürgen Eckerle and Thomas Lais
+
+[Sakura: a ﬂexible coding for tree
+hashing](https://eprint.iacr.org/2013/231.pdf) by Guido Bertoni, Joan
+Daemen, Michaël Peeters, and Gilles Van Assche
+
+[Block-Cipher-Based Tree
+Hashing](https://eprint.iacr.org/2022/283.pdf) by Aldo Gunsing
+
+### SimHash
+
+[SimHash: Hash-based Similarity
+Detection](http://www.webrankinfo.com/dossiers/wp-content/uploads/simhash.pdf)
+by Caitlin Sadowski and Greg Levin
