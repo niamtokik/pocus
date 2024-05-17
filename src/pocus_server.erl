@@ -42,18 +42,18 @@
 %%%
 %%% ```
 %%% % Start a new sequential state machine
-%%% {ok, Pid} = pocus_sequential:start_link().
+%%% {ok, Pid} = pocus_server:start_link().
 %%%
 %%% % push a new string and retrieve its hash
-%%% ok = pocus_sequential:push(Pid, "test").
-%%% pocus_sequential:pull(Pid).
+%%% ok = pocus_server:push(Pid, "test").
+%%% pocus_server:pull(Pid).
 %%%
 %%% % push a new string and retrieve the hash generated
-%%% ok = pocus_sequential:push(Pid, "test").
-%%% pocus_sequential:pull(Pid).
+%%% ok = pocus_server:push(Pid, "test").
+%%% pocus_server:pull(Pid).
 %%%
 %%% % reset fsm to initial state.
-%%% ok = pocus_sequential:reset(Pid).
+%%% ok = pocus_server:reset(Pid).
 %%% '''
 %%%
 %%% == Hach Packing ==
@@ -107,21 +107,21 @@
 %%%
 %%% ```
 %%% % Start a new sequential state machine
-%%% {ok, Pid} = pocus_sequential:start_link().
+%%% {ok, Pid} = pocus_server:start_link().
 %%%
 %%% % hash a string and pack it.
-%%% ok = pocus_sequential:push(Pid, "test").
-%%% ok = pocus_sequential:pack(Pid).
+%%% ok = pocus_server:push(Pid, "test").
+%%% ok = pocus_server:pack(Pid).
 %%%
 %%% % hash another string and pack it.
-%%% ok = pocus_sequential:push(Pid, "test").
-%%% ok = pocus_sequential:pack(Pid).
+%%% ok = pocus_server:push(Pid, "test").
+%%% ok = pocus_server:pack(Pid).
 %%%
 %%% % get the pack
-%%% pocus_sequential:package(Pid).
+%%% pocus_server:package(Pid).
 %%%
 %%% % reset fsm state
-%%% pocus_sequential:reset(Pid).
+%%% pocus_server:reset(Pid).
 %%% '''
 %%%
 %%% == Truncated Hash ==
@@ -157,13 +157,13 @@
 %%% ```
 %%% % Start a new sequential state machine, truncating the
 %%% % produced hash to 1 bit (on the left).
-%%% {ok, Pid} = pocus_sequential:start_link([{trunc, 1}]).
+%%% {ok, Pid} = pocus_server:start_link([{trunc, 1}]).
 %%%
 %%% % hash a string and pack it.
-%%% ok = pocus_sequential:push(Pid, "test").
+%%% ok = pocus_server:push(Pid, "test").
 %%%
 %%% % only one bit is returned from the hash
-%%% {ok, <<1:1>>} = pocus_sequential:package(Pid).
+%%% {ok, <<1:1>>} = pocus_server:package(Pid).
 %%% '''
 %%%
 %%% == Rolling ==
