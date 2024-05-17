@@ -265,7 +265,7 @@
 %%%       and find a correspondance
 %%%
 %%%===================================================================
--module(pocus_sequential).
+-module(pocus_server).
 -behavior(gen_server).
 % starters
 -export([start_link/0, start_link/1, start_link/2]).

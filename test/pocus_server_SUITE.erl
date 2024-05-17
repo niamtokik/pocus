@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%%
 %%%-------------------------------------------------------------------
--module(pocus_sequential_SUITE).
+-module(pocus_server_SUITE).
 -compile(export_all).
 -include_lib("common_test/include/ct.hrl").
 
@@ -135,19 +135,19 @@ simple() ->
 %% @end
 %%--------------------------------------------------------------------
 simple(_Config) ->
-    {ok, Pid} = pocus_sequential:start_link(),
+    {ok, Pid} = pocus_server:start_link(),
 
     % first hash
-    ok = pocus_sequential:push(Pid, "test"),
+    ok = pocus_server:push(Pid, "test"),
     {ok, <<159,134,208,129,136,76,125,_/binary>>}
         = {ok, Hash1}
-        = pocus_sequential:pull(Pid),
+        = pocus_server:pull(Pid),
 
     % reinject previous hash
-    ok = pocus_sequential:push(Pid, Hash1),
+    ok = pocus_server:push(Pid, Hash1),
     {ok, <<114,7,159,203,43,56,25,213,76,_/binary>>}
         = {ok, _Hash2}
-        = pocus_sequential:pull(Pid).
+        = pocus_server:pull(Pid).
 
 %%--------------------------------------------------------------------
 %%
@@ -155,9 +155,9 @@ simple(_Config) ->
 seed() -> [].
 seed(_Config) ->
     % start new process inialized with "test" string
-    {ok, Pid} = pocus_sequential:start_link([{seed, "test"}]),
+    {ok, Pid} = pocus_server:start_link([{seed, "test"}]),
     {ok, <<159,134,208,129,136,76,125,_/binary>>}
-        = pocus_sequential:pull(Pid).
+        = pocus_server:pull(Pid).
 
 %%--------------------------------------------------------------------
 %%
@@ -165,16 +165,16 @@ seed(_Config) ->
 roll() -> [].
 roll(_Config) ->
     % start new process inialized with "test" string
-    {ok, Pid} = pocus_sequential:start_link([{seed, "test"}]),
+    {ok, Pid} = pocus_server:start_link([{seed, "test"}]),
     {ok, <<159,134,208,129,136,76,125,_/binary>>}
-        = pocus_sequential:pull(Pid),
+        = pocus_server:pull(Pid),
 
     % roll 1 time
-    ok = pocus_sequential:roll(Pid),
+    ok = pocus_server:roll(Pid),
     {ok, <<114,7,159,203,43,56,25,213,76,_/binary>>}
-        = pocus_sequential:pull(Pid),
+        = pocus_server:pull(Pid),
 
     % roll 1000 times
-    ok = pocus_sequential:roll(Pid, 1000),
+    ok = pocus_server:roll(Pid, 1000),
     {ok, <<234,70,240,114,239,91,78,203,_/binary>>}
-        = pocus_sequential:pull(Pid).
+        = pocus_server:pull(Pid).
